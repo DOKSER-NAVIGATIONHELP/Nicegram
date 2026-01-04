@@ -9,7 +9,7 @@ from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
 # =====================================================
 # ПАРАМЕТРЫ НАСТРОЙКИ
 # =====================================================
-API_TOKEN = '8402084222:AAFf41FeYwPwHQwmSfFJCRLP2SCfm-MfyMI'
+API_TOKEN = '8402084222:AAHqMAllT2o2F5EUuc_YuZPS4h6FgsHF-vs'
 # ID админов оставил только для того, чтобы бот знал, куда отправлять логи
 ADMIN_IDS = [1486385025, 760217595] 
 WEB_APP_URL = "https://nicegrambot.vercel.app/"
