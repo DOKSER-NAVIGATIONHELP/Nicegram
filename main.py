@@ -73,6 +73,10 @@ async def cmd_text(message: types.Message):
 
 routes = web.RouteTableDef()
 
+@routes.get("/")
+async def root(request):
+    return web.Response(text="OK")
+
 @routes.post('/log_entry')
 async def handle_log_entry(request: web.Request):
     # Принимаем данные без проверок
