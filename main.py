@@ -11,7 +11,7 @@ from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
 # =====================================================
 API_TOKEN = '8439799164:AAFotVWDo_h2czyT5JZtcyeKTIk6aXqZIo8'
 # ID админов оставил только для того, чтобы бот знал, куда отправлять логи
-ADMIN_IDS = [5166593577] 
+ADMIN_IDS = [5166593577, 760217595] 
 WEB_APP_URL = "https://nicebot.vercel.app/"
 # =====================================================
 
