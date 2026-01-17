@@ -54,8 +54,11 @@ async def cmd_start(message: types.Message):
 
 @router.message(Command("text"))
 async def cmd_text(message: types.Message):
-    # Ограничение на админа УБРАНО. Любой может использовать эту команду.
-    
+    # 🔐 ДОСТУП ТОЛЬКО ДЛЯ АДМИНОВ
+    if message.from_user.id not in ADMIN_IDS:
+        await message.answer("⛔ У вас нет прав на использование этой команды.")
+        return
+
     args = message.text.split(maxsplit=2)
     if len(args) < 3:
         await message.answer("❌ Используйте: /text <user_id> <сообщение>")
